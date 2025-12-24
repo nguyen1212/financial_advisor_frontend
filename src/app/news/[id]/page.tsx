@@ -35,6 +35,8 @@ export default function NewsDetailPage() {
   const params = useParams();
   const { showError, showSuccess } = useToast();
 
+  const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:40000/api/v1';
+
   const newsId = params.id as string;
 
   const fetchNewsDetail = async () => {
@@ -42,7 +44,7 @@ export default function NewsDetailPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:40000/api/v1/news/${newsId}`);
+      const response = await fetch(`${API_BASE_URL}/news/${newsId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -97,7 +99,7 @@ export default function NewsDetailPage() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`http://localhost:40000/api/v1/news/${deleteModal.newsId}`, {
+      const response = await fetch(`${API_BASE_URL}/news/${deleteModal.newsId}`, {
         method: 'DELETE',
       });
 

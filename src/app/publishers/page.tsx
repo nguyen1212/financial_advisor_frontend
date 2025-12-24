@@ -25,10 +25,12 @@ export default function Publishers() {
   const router = useRouter();
   const { showError, showSuccess } = useToast();
 
+  const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:40000/api/v1';
+
   const fetchPublishers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:40000/api/v1/publishers');
+      const response = await fetch(`${API_BASE_URL}/publishers`);
 
       if (!response.ok) {
         router.push(`/error?code=${response.status}&message=${encodeURIComponent(response.statusText)}`);
@@ -47,7 +49,7 @@ export default function Publishers() {
   const handleAddPublisher = async (publisherData: { name: string; domain: string; description?: string }) => {
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:40000/api/v1/publishers', {
+      const response = await fetch(`${API_BASE_URL}/publishers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

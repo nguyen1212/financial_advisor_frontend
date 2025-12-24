@@ -27,6 +27,7 @@ export default function PublisherDetailPage() {
   const params = useParams();
   const { showError } = useToast();
 
+  const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:40000/api/v1';
   const publisherId = params.id as string;
 
   const fetchPublisherDetail = async () => {
@@ -34,7 +35,7 @@ export default function PublisherDetailPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:40000/api/v1/publishers/${publisherId}`);
+      const response = await fetch(`${API_BASE_URL}/publishers/${publisherId}`);
 
       if (!response.ok) {
         if (response.status === 404) {

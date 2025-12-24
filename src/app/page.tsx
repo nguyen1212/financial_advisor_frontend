@@ -38,10 +38,12 @@ export default function Home() {
   const router = useRouter();
   const { showError, showSuccess } = useToast();
 
+  const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:40000/api/v1';
+
   const fetchNews = async (from?: string, to?: string) => {
     setLoading(true);
     try {
-      let url = 'http://localhost:40000/api/v1/news';
+      let url = `${API_BASE_URL}/news`;
       const params = new URLSearchParams();
 
       // Convert YYYY-MM-DD to RFC3339 format for Go time.Time parsing
@@ -86,7 +88,7 @@ export default function Home() {
   // Function to check status of a specific news item
   const checkNewsStatus = async (newsId: string) => {
     try {
-      const response = await fetch(`http://localhost:40000/api/v1/news/${newsId}`);
+      const response = await fetch(`${API_BASE_URL}/news/${newsId}`);
 
       if (response.ok) {
         const newsData = await response.json();
@@ -146,7 +148,7 @@ export default function Home() {
   const handleAddNews = async (newsData: { url: string; category: string }) => {
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:40000/api/v1/news', {
+      const response = await fetch(`${API_BASE_URL}/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -224,7 +226,7 @@ export default function Home() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`http://localhost:40000/api/v1/news/${deleteModal.newsId}`, {
+      const response = await fetch(`${API_BASE_URL}/news/${deleteModal.newsId}`, {
         method: 'DELETE',
       });
 
