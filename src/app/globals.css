@@ -12,15 +12,26 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Force light mode - remove dark mode auto-detection */
+body {
+  background: #ffffff !important;
+  color: #171717 !important;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px; /* Base font size */
+  line-height: 1.5;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Ensure html also has white background */
+html {
+  background: #ffffff !important;
 }
+
+/* Unified font size system - standardize all text sizes */
+.text-caption { font-size: 12px; line-height: 16px; } /* Small captions, footer text */
+.text-body-sm { font-size: 14px; line-height: 20px; } /* Form labels, small body text */
+.text-body { font-size: 16px; line-height: 24px; } /* Default body text */
+.text-body-lg { font-size: 18px; line-height: 28px; } /* Large body text */
+.text-heading-sm { font-size: 20px; line-height: 28px; } /* Small headings, subheadings */
+.text-heading { font-size: 24px; line-height: 32px; } /* Section headings */
+.text-heading-lg { font-size: 30px; line-height: 36px; } /* Large headings */
+.text-title { font-size: 36px; line-height: 40px; } /* Page titles */

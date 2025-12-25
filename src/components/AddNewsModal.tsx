@@ -93,7 +93,7 @@ export default function AddNewsModal({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Add News Article</h2>
+            <h2 className="text-heading-sm font-semibold text-gray-800">Add News Article</h2>
             <button
               onClick={handleClose}
               disabled={loading}
@@ -109,7 +109,7 @@ export default function AddNewsModal({
             <div className="space-y-4">
               {/* URL Field */}
               <div>
-                <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="url" className="block text-body-sm font-medium text-gray-700 mb-1">
                   Article URL *
                 </label>
                 <input
@@ -125,13 +125,13 @@ export default function AddNewsModal({
                   placeholder="https://example.com/news-article"
                 />
                 {errors.url && (
-                  <p className="mt-1 text-sm text-red-600">{errors.url}</p>
+                  <p className="mt-1 text-body-sm text-red-600">{errors.url}</p>
                 )}
               </div>
 
               {/* Category Field */}
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="category" className="block text-body-sm font-medium text-gray-700 mb-1">
                   Category *
                 </label>
                 <select
@@ -152,7 +152,7 @@ export default function AddNewsModal({
                   ))}
                 </select>
                 {errors.category && (
-                  <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+                  <p className="mt-1 text-body-sm text-red-600">{errors.category}</p>
                 )}
               </div>
             </div>
@@ -163,14 +163,14 @@ export default function AddNewsModal({
                 type="button"
                 onClick={handleClose}
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-body-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-body-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Creating...' : 'Add News'}
               </button>

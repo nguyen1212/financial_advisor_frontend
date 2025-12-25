@@ -5,16 +5,8 @@ const nextConfig: NextConfig = {
     turbopackUseSystemTlsCerts: true,
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '**',
-      },
-    ],
+    // Disable image optimization to respect backend CSP
+    unoptimized: true,
   },
 };
 

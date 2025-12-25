@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import DateRangePicker from '@/components/DateRangePicker';
 import AddNewsModal from '@/components/AddNewsModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
@@ -11,7 +10,7 @@ import { useToast } from '@/context/ToastContext';
 interface NewsItem {
   id: string;
   title: string;
-  thumbnail: string;
+  thumbnail?: string;
   status: string;
   published_at?: string;
   author?: string;
@@ -23,8 +22,10 @@ interface NewsResponse {
 
 export default function Home() {
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pollingNewsId, setPollingNewsId] = useState<string | null>(null);
@@ -40,8 +41,12 @@ export default function Home() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:40000/api/v1';
 
-  const fetchNews = async (from?: string, to?: string) => {
-    setLoading(true);
+  const fetchNews = async (from?: string, to?: string, status?: string, isInitial = false) => {
+    if (isInitial) {
+      setInitialLoading(true);
+    } else {
+      setSearching(true);
+    }
     try {
       let url = `${API_BASE_URL}/news`;
       const params = new URLSearchParams();
@@ -54,6 +59,9 @@ export default function Home() {
       if (to) {
         const toDateTime = `${to}T23:59:59Z`;
         params.append('to', toDateTime);
+      }
+      if (status) {
+        params.append('status', status);
       }
 
       if (params.toString()) {
@@ -69,7 +77,8 @@ export default function Home() {
 
       const data: NewsResponse = await response.json();
       setNews(data.data);
-      setLoading(false);
+      setInitialLoading(false);
+      setSearching(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Network connection failed';
       router.push(`/error?code=503&message=${encodeURIComponent(errorMessage)}`);
@@ -77,11 +86,12 @@ export default function Home() {
   };
 
   const handleFilter = () => {
-    fetchNews(dateRange.from, dateRange.to);
+    fetchNews(dateRange.from, dateRange.to, statusFilter);
   };
 
   const handleClearFilter = () => {
     setDateRange({ from: '', to: '' });
+    setStatusFilter('');
     fetchNews();
   };
 
@@ -103,7 +113,9 @@ export default function Home() {
                 id: updatedNewsItem.id,
                 title: updatedNewsItem.title || item.title,
                 thumbnail: updatedNewsItem.thumbnail || item.thumbnail,
-                status: updatedNewsItem.status
+                status: updatedNewsItem.status,
+                published_at: updatedNewsItem.published_at || item.published_at,
+                author: updatedNewsItem.author || item.author
               } : item
             )
           );
@@ -190,18 +202,18 @@ export default function Home() {
         return;
       }
 
-      // Get the created news item ID from response
+      // Get the created news item from response
       const responseData = await response.json();
-      const createdNewsId = responseData.data?.id;
+      const createdNewsItem = responseData.data;
 
-      // Refresh the news list after successful creation
-      await fetchNews(dateRange.from, dateRange.to);
-      showSuccess('News article added successfully!');
-      setIsModalOpen(false);
+      // Add the new news item to the beginning of the list (most recent first)
+      if (createdNewsItem) {
+        setNews(prevNews => [createdNewsItem, ...prevNews]);
+        showSuccess('News article added successfully!');
+        setIsModalOpen(false);
 
-      // Start polling for status updates if we have a news ID
-      if (createdNewsId) {
-        startPollingNewsStatus(createdNewsId);
+        // Start polling for status updates
+        startPollingNewsStatus(createdNewsItem.id);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Network connection failed';
@@ -285,7 +297,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchNews();
+    fetchNews(undefined, undefined, undefined, true);
   }, []);
 
   // Cleanup polling interval on component unmount
@@ -297,10 +309,10 @@ export default function Home() {
     };
   }, [activePollingInterval]);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading news...</div>
+        <div className="text-heading-sm">Loading news...</div>
       </div>
     );
   }
@@ -309,11 +321,10 @@ export default function Home() {
     <div className="min-h-screen">
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">News Feed</h1>
+          <h1 className="text-title font-bold text-gray-800">News Feed</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -324,33 +335,35 @@ export default function Home() {
 
         {/* Filters Section */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Filters</h2>
+          <h2 className="text-heading font-semibold text-gray-800 mb-6">Filters</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Date Range Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-body-sm font-medium text-gray-700 mb-2">
                 Date Range
               </label>
               <DateRangePicker
                 value={dateRange}
                 onChange={setDateRange}
-                disabled={loading}
+                disabled={searching}
               />
             </div>
 
-            {/* Placeholder for additional filters */}
+            {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-body-sm font-medium text-gray-700 mb-2">
                 Status Filter
               </label>
               <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                defaultValue=""
               >
                 <option value="">All Status</option>
+                <option value="added">Added</option>
                 <option value="synced">Synced</option>
-                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
               </select>
             </div>
           </div>
@@ -360,14 +373,14 @@ export default function Home() {
             <div className="flex gap-3">
               <button
                 onClick={handleFilter}
-                disabled={loading}
+                disabled={searching}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'Loading...' : 'Apply Filters'}
+                {searching ? 'Searching...' : 'Apply Filters'}
               </button>
               <button
                 onClick={handleClearFilter}
-                disabled={loading}
+                disabled={searching}
                 className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Clear All
@@ -375,30 +388,47 @@ export default function Home() {
             </div>
 
             {/* Active Filters Display */}
-            {(dateRange.from || dateRange.to) && (
-              <div className="flex items-center text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-md">
+            {(dateRange.from || dateRange.to || statusFilter) && (
+              <div className="flex items-center text-body-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-md">
                 <span className="mr-2">Active filters:</span>
-                {dateRange.from && dateRange.to ? (
-                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
-                    {dateRange.from} to {dateRange.to}
-                  </span>
-                ) : dateRange.from ? (
-                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
-                    From {dateRange.from}
-                  </span>
-                ) : (
-                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
-                    To {dateRange.to}
-                  </span>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {dateRange.from && dateRange.to ? (
+                    <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      {dateRange.from} to {dateRange.to}
+                    </span>
+                  ) : dateRange.from ? (
+                    <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      From {dateRange.from}
+                    </span>
+                  ) : dateRange.to ? (
+                    <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      To {dateRange.to}
+                    </span>
+                  ) : null}
+                  {statusFilter && (
+                    <span className="bg-green-100 px-2 py-1 rounded text-green-800">
+                      Status: {statusFilter}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {news.length === 0 ? (
+        {searching ? (
+          <div className="text-center text-gray-600 py-8">
+            <div className="inline-flex items-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Searching news...
+            </div>
+          </div>
+        ) : news.length === 0 ? (
           <div className="text-center text-gray-600">
-            {loading ? 'Loading news...' : 'No news articles found'}
+            No news articles found
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -408,24 +438,30 @@ export default function Home() {
                 onClick={() => router.push(`/news/${item.id}`)}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
               >
-                <div className="relative h-48">
+                <div className="relative h-48 overflow-hidden">
                   {item.thumbnail ? (
-                    <Image
+                    <img
                       src={item.thumbnail}
                       alt={item.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Show fallback when image fails to load (CSP blocked or broken URL)
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-500 text-body-sm">Image blocked</span></div>';
+                        }
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-500 text-sm">No image</span>
+                      <span className="text-gray-500 text-body-sm">No image</span>
                     </div>
                   )}
                 </div>
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-semibold text-gray-800 hover:text-blue-600 transition-colors flex-1">{item.title}</h2>
+                    <h2 className="text-heading-sm font-semibold text-gray-800 hover:text-blue-600 transition-colors flex-1">{item.title}</h2>
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent card click navigation
@@ -442,7 +478,7 @@ export default function Home() {
 
                   {/* Published Date */}
                   {item.published_at && (
-                    <div className="flex items-center text-gray-500 text-sm mb-2">
+                    <div className="flex items-center text-gray-500 text-body-sm mb-2">
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -451,9 +487,13 @@ export default function Home() {
                   )}
 
                   <div className="flex justify-between items-center">
-                    <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${
+                    <span className={`inline-block px-2 py-1 rounded text-body-sm font-medium ${
                       item.status === 'synced'
                         ? 'bg-green-100 text-green-800'
+                        : item.status === 'failed'
+                        ? 'bg-red-100 text-red-800'
+                        : item.status === 'added'
+                        ? 'bg-blue-100 text-blue-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
                       {item.status}
@@ -461,7 +501,7 @@ export default function Home() {
 
                     {/* Author */}
                     {item.author && (
-                      <div className="flex items-center text-gray-500 text-sm">
+                      <div className="flex items-center text-gray-500 text-body-sm">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>

@@ -141,7 +141,7 @@ export default function NewsDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading news article...</div>
+        <div className="text-heading-sm">Loading news article...</div>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export default function NewsDetailPage() {
   if (!newsDetail) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">News article not found</div>
+        <div className="text-heading-sm text-gray-600">News article not found</div>
       </div>
     );
   }
@@ -173,7 +173,7 @@ export default function NewsDetailPage() {
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+              <span className={`inline-block px-3 py-1 rounded-full text-body-sm font-medium ${
                 newsDetail.status === 'synced'
                   ? 'bg-green-100 text-green-800'
                   : 'bg-gray-100 text-gray-800'
@@ -188,7 +188,7 @@ export default function NewsDetailPage() {
                     href={newsDetail.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-body-sm"
                   >
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -199,7 +199,7 @@ export default function NewsDetailPage() {
 
                 <button
                   onClick={handleDeleteNews}
-                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-body-sm"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -209,11 +209,11 @@ export default function NewsDetailPage() {
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
+            <h1 className="text-heading-lg font-bold text-gray-900 mb-4 leading-tight">
               {newsDetail.title}
             </h1>
 
-            <div className="flex items-center text-gray-600 text-sm space-x-4">
+            <div className="flex items-center text-gray-600 text-body-sm space-x-4">
               {newsDetail.author && (
                 <div className="flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,13 +236,18 @@ export default function NewsDetailPage() {
 
           {/* Thumbnail */}
           {newsDetail.thumbnail && (
-            <div className="relative h-64 md:h-96">
+            <div className="relative h-64 md:h-96 overflow-hidden">
               <img
                 src={newsDetail.thumbnail}
                 alt={newsDetail.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
+                  // Show fallback when image fails to load (CSP blocked or broken URL)
                   e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-500 text-body-sm">Image blocked by security policy</span></div>';
+                  }
                 }}
               />
             </div>
@@ -264,7 +269,7 @@ export default function NewsDetailPage() {
 
           {/* Footer */}
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
+            <div className="text-body-sm text-gray-600">
               <span>Article ID: {newsDetail.id}</span>
             </div>
           </div>

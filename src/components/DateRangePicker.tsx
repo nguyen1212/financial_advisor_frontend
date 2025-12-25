@@ -128,7 +128,7 @@ export default function DateRangePicker({
         <button
           key={day}
           onClick={() => handleDateClick(dateStr)}
-          className={`h-8 w-8 text-sm rounded-md transition-colors ${
+          className={`h-8 w-8 text-body-sm rounded-md transition-colors ${
             isSelected
               ? 'bg-blue-600 text-white'
               : isInRange
@@ -177,7 +177,7 @@ export default function DateRangePicker({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <h3 className="text-lg font-medium">
+              <h3 className="text-heading-sm font-medium">
                 {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h3>
               <button
@@ -193,7 +193,7 @@ export default function DateRangePicker({
 
             <div className="grid grid-cols-7 gap-1 mb-2">
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                <div key={day} className="h-8 flex items-center justify-center text-sm font-medium text-gray-500">
+                <div key={day} className="h-8 flex items-center justify-center text-body-sm font-medium text-gray-500">
                   {day}
                 </div>
               ))}
@@ -204,7 +204,7 @@ export default function DateRangePicker({
             </div>
 
             <div className="pt-3 border-t border-gray-200">
-              <div className="text-sm text-gray-600 text-center">
+              <div className="text-body-sm text-gray-600 text-center">
                 {selectingStart || !value.from ? 'Select start date' : 'Select end date'}
               </div>
             </div>

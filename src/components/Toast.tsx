@@ -90,7 +90,7 @@ export default function Toast({ message, type, duration = 5000, onClose }: Toast
     >
       <div className={getToastStyles()}>
         {getIcon()}
-        <span className="flex-1 text-sm font-medium">{message}</span>
+        <span className="flex-1 text-body-sm font-medium">{message}</span>
         <button
           onClick={handleClose}
           className="ml-3 text-current hover:text-opacity-75 focus:outline-none"

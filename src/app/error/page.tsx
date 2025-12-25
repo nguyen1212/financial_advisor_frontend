@@ -39,17 +39,17 @@ function ErrorContent() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8">
-          <h1 className="text-6xl font-bold text-gray-800 mb-2">
+          <h1 className="text-title font-bold text-gray-800 mb-2">
             Error {code}
           </h1>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+          <h2 className="text-heading font-semibold text-gray-700 mb-4">
             {getErrorTitle(code)}
           </h2>
           <p className="text-gray-600 mb-2">
             {getErrorDescription(code)}
           </p>
           {message !== getErrorDescription(code) && (
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-body-sm text-gray-500 mb-6">
               {message}
             </p>
           )}
@@ -78,7 +78,7 @@ function ErrorContent() {
 
 export default function ErrorPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-xl">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-heading-sm">Loading...</div></div>}>
       <ErrorContent />
     </Suspense>
   );

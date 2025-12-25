@@ -62,6 +62,28 @@ export default function Publishers() {
           showError('A publisher with this name or domain already exists.');
           return;
         }
+
+        // Handle specific error codes
+        try {
+          const errorData = await response.json();
+          if (errorData.errors && errorData.errors[0]) {
+            if (errorData.errors[0].code === 'CODE_URL_INVALID') {
+              showError('The domain format is invalid. Please enter a valid domain.');
+              return;
+            }
+            if (errorData.errors[0].code === 'CODE_PUBLISHER_NOT_FOUND') {
+              showError('The publisher was not found.');
+              return;
+            }
+            if (errorData.errors[0].code === 'CODE_URL_TOO_LONG') {
+              showError('The domain is too long. Please use a shorter domain.');
+              return;
+            }
+          }
+        } catch (parseError) {
+          // If we can't parse the response, fall through to generic error handling
+        }
+
         router.push(`/error?code=${response.status}&message=${encodeURIComponent(response.statusText)}`);
         return;
       }
@@ -85,7 +107,7 @@ export default function Publishers() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading publishers...</div>
+        <div className="text-heading-sm">Loading publishers...</div>
       </div>
     );
   }
@@ -94,7 +116,7 @@ export default function Publishers() {
     <div className="min-h-screen">
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">Publishers</h1>
+          <h1 className="text-title font-bold text-gray-800">Publishers</h1>
           <button
             onClick={() => setIsModalOpen(true)}
             disabled={loading}
@@ -120,16 +142,16 @@ export default function Publishers() {
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
               >
                 <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-2">{publisher.name}</h2>
-                  <p className="text-blue-600 text-sm font-medium mb-2">{publisher.domain}</p>
-                  <p className="text-gray-600 text-sm mb-3">{publisher.description}</p>
+                  <h2 className="text-heading-sm font-semibold text-gray-800 mb-2">{publisher.name}</h2>
+                  <p className="text-blue-600 text-body-sm font-medium mb-2">{publisher.domain}</p>
+                  <p className="text-gray-600 text-body-sm mb-3">{publisher.description}</p>
 
                   {publisher.website && (
                     <a
                       href={publisher.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 text-sm underline"
+                      className="text-blue-600 hover:text-blue-800 text-body-sm underline"
                     >
                       Visit Website
                     </a>

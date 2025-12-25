@@ -32,7 +32,7 @@ export default function Sidebar() {
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800">News Portal</h1>
+          <h1 className="text-heading-sm font-bold text-gray-800">News Portal</h1>
         </div>
 
         {/* Navigation */}
@@ -44,7 +44,7 @@ export default function Sidebar() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    className={`flex items-center px-4 py-3 text-body-sm font-medium rounded-lg transition-colors ${
                       isActive
                         ? 'bg-blue-100 text-blue-700 border border-blue-200'
                         : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
@@ -63,7 +63,7 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-caption text-gray-500 text-center">
             News Portal v1.0
           </p>
         </div>
