@@ -334,7 +334,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     key={index}
                     onClick={() => {
                       setSearchQuery(suggestion);
-                      fetchSuggestions(suggestion);
+                      fetchResults(suggestion, 1, false);
                     }}
                     className="px-3 py-1 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
                   >
