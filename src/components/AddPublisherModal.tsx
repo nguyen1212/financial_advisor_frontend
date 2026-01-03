@@ -87,7 +87,17 @@ export default function AddPublisherModal({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0"
+        onClick={handleClose}
+      />
+
+      {/* Modal */}
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200 relative z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-heading-sm font-semibold text-gray-800">Add New Publisher</h2>

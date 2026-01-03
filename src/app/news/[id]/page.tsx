@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
@@ -33,18 +33,29 @@ export default function NewsDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { showError, showSuccess } = useToast();
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:40000/api/v1';
 
   const newsId = params.id as string;
+  const highlightKeywords = searchParams.getAll('highlight_keywords');
 
   const fetchNewsDetail = async () => {
     if (!newsId) return;
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/news/${newsId}`);
+      let url = `${API_BASE_URL}/news/${newsId}`;
+
+      // Add highlight keywords to query params if present
+      if (highlightKeywords.length > 0) {
+        const params = new URLSearchParams();
+        highlightKeywords.forEach(keyword => params.append('highlight_keywords', keyword));
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -67,7 +78,8 @@ export default function NewsDetailPage() {
 
   useEffect(() => {
     fetchNewsDetail();
-  }, [newsId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newsId]); // Only depend on newsId, highlightKeywords are read directly in fetchNewsDetail
 
   const formatDate = (dateString: string) => {
     try {
@@ -156,6 +168,15 @@ export default function NewsDetailPage() {
 
   return (
     <div className="min-h-screen">
+      <style jsx>{`
+        .news-content mark {
+          background-color: #fef3c7;
+          color: #92400e;
+          font-weight: 600;
+          padding: 2px 4px;
+          border-radius: 2px;
+        }
+      `}</style>
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Back Button */}
         <button
@@ -258,7 +279,7 @@ export default function NewsDetailPage() {
             <div className="prose max-w-none">
               {newsDetail.content ? (
                 <div
-                  className="text-gray-800 leading-relaxed whitespace-pre-wrap"
+                  className="text-gray-800 leading-relaxed whitespace-pre-wrap news-content"
                   dangerouslySetInnerHTML={{ __html: newsDetail.content }}
                 />
               ) : (

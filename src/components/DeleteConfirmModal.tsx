@@ -21,8 +21,17 @@ export default function DeleteConfirmModal({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200">
+      <div
+        className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200 z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">

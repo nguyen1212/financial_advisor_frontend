@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DateRangePicker from '@/components/DateRangePicker';
 import AddNewsModal from '@/components/AddNewsModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import SearchModal from '@/components/SearchModal';
 import { useToast } from '@/context/ToastContext';
 
 interface NewsItem {
@@ -14,10 +15,17 @@ interface NewsItem {
   status: string;
   published_at?: string;
   author?: string;
+  content?: string;
 }
 
 interface NewsResponse {
   data: NewsItem[];
+  pagination?: {
+    page: number;
+    size: number;
+    total: number;
+    total_pages: number;
+  };
 }
 
 export default function Home() {
@@ -26,7 +34,17 @@ export default function Home() {
   const [searching, setSearching] = useState(false);
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(30);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    size: 30,
+    total: 0,
+    total_pages: 0
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pollingNewsId, setPollingNewsId] = useState<string | null>(null);
   const [activePollingInterval, setActivePollingInterval] = useState<NodeJS.Timeout | null>(null);
@@ -41,12 +59,15 @@ export default function Home() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:40000/api/v1';
 
-  const fetchNews = async (from?: string, to?: string, status?: string, isInitial = false) => {
+  const fetchNews = async (from?: string, to?: string, status?: string, currentPage?: number, pageSize?: number, isInitial = false, append = false) => {
     if (isInitial) {
       setInitialLoading(true);
+    } else if (append) {
+      setLoadingMore(true);
     } else {
       setSearching(true);
     }
+
     try {
       let url = `${API_BASE_URL}/news`;
       const params = new URLSearchParams();
@@ -64,6 +85,10 @@ export default function Home() {
         params.append('status', status);
       }
 
+      // Add pagination parameters
+      params.append('page', String(currentPage || page));
+      params.append('size', String(pageSize || size));
+
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
@@ -76,9 +101,19 @@ export default function Home() {
       }
 
       const data: NewsResponse = await response.json();
-      setNews(data.data);
+
+      if (append) {
+        setNews(prev => [...prev, ...(data.data || [])]);
+      } else {
+        setNews(data.data);
+      }
+
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
       setInitialLoading(false);
       setSearching(false);
+      setLoadingMore(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Network connection failed';
       router.push(`/error?code=503&message=${encodeURIComponent(errorMessage)}`);
@@ -86,13 +121,37 @@ export default function Home() {
   };
 
   const handleFilter = () => {
-    fetchNews(dateRange.from, dateRange.to, statusFilter);
+    setPage(1); // Reset to first page when applying filters
+    fetchNews(dateRange.from, dateRange.to, statusFilter, 1, size, false, false);
   };
 
   const handleClearFilter = () => {
     setDateRange({ from: '', to: '' });
     setStatusFilter('');
-    fetchNews();
+    setPage(1); // Reset to first page
+    fetchNews(undefined, undefined, undefined, 1, size, false, false);
+  };
+
+  // Handle scroll to load more
+  const handleScroll = () => {
+    if (
+      !initialLoading &&
+      !searching &&
+      !loadingMore &&
+      pagination &&
+      news.length < pagination.total
+    ) {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+
+      // Load more when within 300px of bottom
+      if (scrollTop + clientHeight >= scrollHeight - 300) {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchNews(dateRange.from, dateRange.to, statusFilter, nextPage, size, false, true);
+      }
+    }
   };
 
   // Function to check status of a specific news item
@@ -115,7 +174,8 @@ export default function Home() {
                 thumbnail: updatedNewsItem.thumbnail || item.thumbnail,
                 status: updatedNewsItem.status,
                 published_at: updatedNewsItem.published_at || item.published_at,
-                author: updatedNewsItem.author || item.author
+                author: updatedNewsItem.author || item.author,
+                content: updatedNewsItem.content || item.content
               } : item
             )
           );
@@ -297,7 +357,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchNews(undefined, undefined, undefined, true);
+    fetchNews(undefined, undefined, undefined, 1, 30, true, false);
   }, []);
 
   // Cleanup polling interval on component unmount
@@ -308,6 +368,25 @@ export default function Home() {
       }
     };
   }, [activePollingInterval]);
+
+  // Add scroll listener
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [initialLoading, searching, loadingMore, pagination, news.length, page, dateRange, statusFilter]);
+
+  // Handle Cmd+K / Ctrl+K to open search modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (initialLoading) {
     return (
@@ -322,15 +401,29 @@ export default function Home() {
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-title font-bold text-gray-800">News Feed</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add News
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Search Button */}
+            <button
+              onClick={() => setIsSearchModalOpen(true)}
+              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="hidden sm:inline">Search</span>
+            </button>
+
+            {/* Add News Button */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add News
+            </button>
+          </div>
         </div>
 
         {/* Filters Section */}
@@ -431,8 +524,9 @@ export default function Home() {
             No news articles found
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {news.map((item, index) => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {news.map((item, index) => (
               <div
                 key={item.id || `news-${index}`}
                 onClick={() => router.push(`/news/${item.id}`)}
@@ -486,6 +580,13 @@ export default function Home() {
                     </div>
                   )}
 
+                  {/* Content Preview */}
+                  {item.content && (
+                    <p className="text-body-sm text-gray-600 mb-3 line-clamp-3">
+                      {item.content}
+                    </p>
+                  )}
+
                   <div className="flex justify-between items-center">
                     <span className={`inline-block px-2 py-1 rounded text-body-sm font-medium ${
                       item.status === 'synced'
@@ -511,8 +612,46 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {/* Pagination Info */}
+            {pagination && pagination.total > 0 && (
+              <div className="mt-6 text-center text-sm text-gray-600">
+                Showing {news.length} of {pagination.total} article{pagination.total !== 1 ? 's' : ''}
+              </div>
+            )}
+
+            {/* Loading more indicator */}
+            {loadingMore && (
+              <div className="flex items-center justify-center py-8">
+                <div className="inline-flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Loading more articles...
+                </div>
+              </div>
+            )}
+
+          </>
         )}
 
         <AddNewsModal
@@ -529,6 +668,11 @@ export default function Home() {
           title="Delete News Article"
           message={`Are you sure you want to delete "${deleteModal.newsTitle}"? This action cannot be undone.`}
           loading={deleting}
+        />
+
+        <SearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
         />
       </div>
     </div>
